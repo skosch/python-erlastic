@@ -70,6 +70,12 @@ class ErlangTermDecoder(object):
             items.append(val)
         return tuple(items), offset
 
+    def decode_p(self, bytes, offset = 0):
+        """Decode NEW_FUN_EXT"""
+        size = struct.unpack(">L", bytes[offset:offset+4])[0]
+        arity = ord(bytes[4])
+        return "f/%d"%(arity), offset+size
+
     def decode_i(self, bytes, offset):
         """LARGE_TUPLE_EXT"""
         arity = struct.unpack(">L", bytes[offset:offset+4])[0]
