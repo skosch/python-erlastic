@@ -12,6 +12,7 @@ setup(
     author_email = 'samuel@descolada.com',
     url = 'http://github.com/samuel/python-erlastic',
     packages = ['erlastic'],
+    install_requires=['six'],
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
