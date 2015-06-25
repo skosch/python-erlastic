@@ -1,9 +1,11 @@
 
 from __future__ import division
 
+import six
 import struct
 import zlib
 
+from erlastic.compat import *
 from erlastic.constants import *
 from erlastic.types import *
 
@@ -23,17 +25,17 @@ class ErlangTermDecoder(object):
                 except: pass
 
     def decode(self, buf, offset=0):
-        version = buf[offset]
+        version = six.indexbytes(buf, offset)
         if version != FORMAT_VERSION:
             raise EncodingError("Bad version number. Expected %d found %d" % (FORMAT_VERSION, version))
         return self.decode_part(buf, offset+1)[0]
 
     def decode_part(self, buf, offset=0):
-        return self.decoders[buf[offset]](buf, offset+1)
+        return self.decoders[six.indexbytes(buf, offset)](buf, offset+1)
 
     def decode_97(self, buf, offset):
         """SMALL_INTEGER_EXT"""
-        return buf[offset], offset+1
+        return six.indexbytes(buf, offset), offset+1
 
     def decode_98(self, buf, offset):
         """INTEGER_EXT"""
@@ -41,7 +43,7 @@ class ErlangTermDecoder(object):
 
     def decode_99(self, buf, offset):
         """FLOAT_EXT"""
-        return float(buf[offset:offset+31].split(b'\x00', 1)[0]), offset+31
+        return float(buf[offset:offset+31].split(six.b('\x00'), 1)[0]), offset+31
 
     def decode_70(self, buf, offset):
         """NEW_FLOAT_EXT"""
@@ -55,13 +57,13 @@ class ErlangTermDecoder(object):
 
     def decode_115(self, buf, offset):
         """SMALL_ATOM_EXT"""
-        atom_len = buf[offset]
+        atom_len = six.intexbytes(buf, offset)
         atom = buf[offset+1:offset+1+atom_len]
         return self.convert_atom(atom), offset+atom_len+1
 
     def decode_104(self, buf, offset):
         """SMALL_TUPLE_EXT"""
-        arity = buf[offset]
+        arity = six.indexbytes(buf, offset)
         offset += 1
 
         items = []
@@ -112,7 +114,7 @@ class ErlangTermDecoder(object):
 
     def decode_110(self, buf, offset):
         """SMALL_BIG_EXT"""
-        n = buf[offset]
+        n = six.indexbytes(buf, offset)
         offset += 1
         return self.decode_bigint(n, buf, offset)
 
@@ -123,12 +125,12 @@ class ErlangTermDecoder(object):
         return self.decode_bigint(n, buf, offset)
 
     def decode_bigint(self, n, buf, offset):
-        sign = buf[offset]
+        sign = six.indexbytes(buf, offset)
         offset += 1
         b = 1
         val = 0
         for i in range(n):
-            val += buf[offset] * b
+            val += six.indexbytes(buf, offset) * b
             b <<= 8
             offset += 1
         if sign != 0:
@@ -149,7 +151,7 @@ class ErlangTermDecoder(object):
         node, offset = self.decode_part(buf, offset+2)
         if not isinstance(node, Atom):
             raise EncodingError("Expected atom while parsing NEW_REFERENCE_EXT, found %r instead" % node)
-        creation = buf[offset]
+        creation = six.indexbytes(buf, offset)
         reference_id = struct.unpack(">%dL" % id_len, buf[offset+1:offset+1+4*id_len])
         return Reference(node, reference_id, creation), offset+1+4*id_len
 
@@ -178,7 +180,7 @@ class ErlangTermDecoder(object):
         if not isinstance(function, Atom):
             raise EncodingError("Expected atom while parsing EXPORT_EXT, found %r instead" % function)
         arity, offset = self.decode_part(buf, offset)
-        if not isinstance(arity, int):
+        if not isinstance(arity, six.integer_types):
             raise EncodingError("Expected integer while parsing EXPORT_EXT, found %r instead" % arity)
         return Export(module, function, arity), offset+1
 
@@ -206,11 +208,11 @@ class ErlangTermEncoder(object):
         import sys
         import pprint
         #pprint.pprint(self.encode_part(obj),stream=sys.stderr)
-        ubuf = b"".join(self.encode_part(obj))
+        ubuf = six.b('').join(self.encode_part(obj))
         if compressed is True:
             compressed = 6
         if not (compressed is False \
-                    or (isinstance(compressed, int) \
+                    or (isinstance(compressed, six.integer_types) \
                             and compressed >= 0 and compressed <= 9)):
             raise TypeError("compressed must be True, False or "
                             "an integer between 0 and 9")
@@ -219,20 +221,20 @@ class ErlangTermEncoder(object):
             if len(cbuf) < len(ubuf):
                 usize = struct.pack(">L", len(ubuf))
                 ubuf = "".join([COMPRESSED, usize, cbuf])
-        return bytes([FORMAT_VERSION]) + ubuf
+        return pack_bytes([FORMAT_VERSION]) + ubuf
 
     def encode_part(self, obj):
         if obj is False:
-            return [bytes([ATOM_EXT]), struct.pack(">H", 5), b"false"]
+            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 5), b"false"]
         elif obj is True:
-            return [bytes([ATOM_EXT]), struct.pack(">H", 4), b"true"]
+            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 4), b"true"]
         elif obj is None:
-            return [bytes([ATOM_EXT]), struct.pack(">H", 4), b"none"]
-        elif isinstance(obj, int):
+            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 4), b"none"]
+        elif isinstance(obj, six.integer_types):
             if 0 <= obj <= 255:
-                return [bytes([SMALL_INTEGER_EXT,obj])]
+                return [pack_bytes([SMALL_INTEGER_EXT,obj])]
             elif -2147483648 <= obj <= 2147483647:
-                return [bytes([INTEGER_EXT]), struct.pack(">l", obj)]
+                return [pack_bytes([INTEGER_EXT]), struct.pack(">l", obj)]
             else:
                 sign = obj < 0
                 obj = abs(obj)
@@ -243,54 +245,57 @@ class ErlangTermEncoder(object):
                     obj >>= 8
 
                 if len(big_buf) < 256:
-                    return [bytes([SMALL_BIG_EXT,len(big_buf),sign]),bytes(big_buf)]
+                    return [pack_bytes([SMALL_BIG_EXT,len(big_buf),sign]),
+                            pack_bytes(big_buf)]
                 else:
-                    return [bytes([LARGE_BIG_EXT]), struct.pack(">L", len(big_buf)), bytes([sign]), bytes(big_buf)]
+                    return [pack_bytes([LARGE_BIG_EXT]),
+                            struct.pack(">L", len(big_buf)),
+                            pack_bytes([sign]), pack_bytes(big_buf)]
         elif isinstance(obj, float):
             floatstr = ("%.20e" % obj).encode('ascii')
-            return [bytes([FLOAT_EXT]), floatstr + b"\x00"*(31-len(floatstr))]
+            return [pack_bytes([FLOAT_EXT]), floatstr + b"\x00"*(31-len(floatstr))]
         elif isinstance(obj, Atom):
             st = obj.encode('latin-1')
-            return [bytes([ATOM_EXT]), struct.pack(">H", len(st)), st]
-        elif isinstance(obj, str):
+            return [pack_bytes([ATOM_EXT]), struct.pack(">H", len(st)), st]
+        elif isinstance(obj, six.string_types):
             st = obj.encode('utf-8')
-            return [bytes([BINARY_EXT]), struct.pack(">L", len(st)), st]
-        elif isinstance(obj, bytes):
-            return [bytes([BINARY_EXT]), struct.pack(">L", len(obj)), obj]
+            return [pack_bytes([BINARY_EXT]), struct.pack(">L", len(st)), st]
+        elif isinstance(obj, six.binary_type):
+            return [pack_bytes([BINARY_EXT]), struct.pack(">L", len(obj)), obj]
         elif isinstance(obj, tuple):
             n = len(obj)
             if n < 256:
-                buf = [bytes([SMALL_TUPLE_EXT,n])]
+                buf = [pack_bytes([SMALL_TUPLE_EXT,n])]
             else:
-                buf = [bytes([LARGE_TUPLE_EXT]), struct.pack(">L", n)]
+                buf = [pack_bytes([LARGE_TUPLE_EXT]), struct.pack(">L", n)]
             for item in obj:
                 buf += self.encode_part(item)
             return buf
         elif obj == []:
-            return [bytes([NIL_EXT])]
+            return [pack_bytes([NIL_EXT])]
         elif isinstance(obj, list):
-            buf = [bytes([LIST_EXT]), struct.pack(">L", len(obj))]
+            buf = [pack_bytes([LIST_EXT]), struct.pack(">L", len(obj))]
             for item in obj:
                 buf += self.encode_part(item)
-            buf.append(bytes([NIL_EXT])) # list tail - no such thing in Python
+            buf.append(pack_bytes([NIL_EXT])) # list tail - no such thing in Python
             return buf
         elif isinstance(obj, Reference):
-            return [bytes([NEW_REFERENCE_EXT]),
-                struct.pack(">H", len(obj.ref_id)),
-                bytes([ATOM_EXT]), struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
-                bytes([obj.creation]), struct.pack(">%dL" % len(obj.ref_id), *obj.ref_id)]
+            return [pack_bytes([NEW_REFERENCE_EXT]), struct.pack(">H", len(obj.ref_id)),
+                    pack_bytes([ATOM_EXT]), struct.pack(">H", len(obj.node)),
+                    obj.node.encode('latin-1'), pack_bytes([obj.creation]),
+                    struct.pack(">%dL" % len(obj.ref_id), *obj.ref_id)]
         elif isinstance(obj, Port):
-            return [bytes([PORT_EXT]),
-                bytes([ATOM_EXT]), struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
-                struct.pack(">LB", obj.port_id, obj.creation)]
+            return [pack_bytes([PORT_EXT]), pack_bytes([ATOM_EXT]),
+                    struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
+                    struct.pack(">LB", obj.port_id, obj.creation)]
         elif isinstance(obj, PID):
-           return [bytes([PID_EXT]),
-                bytes([ATOM_EXT]), struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
-                struct.pack(">LLB", obj.pid_id, obj.serial, obj.creation)]
+           return [pack_bytes([PID_EXT]), pack_bytes([ATOM_EXT]),
+                   struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
+                   struct.pack(">LLB", obj.pid_id, obj.serial, obj.creation)]
         elif isinstance(obj, Export):
-            return [bytes([EXPORT_EXT]),
-                bytes([ATOM_EXT]), struct.pack(">H", len(obj.module)), obj.module.encode('latin-1'),
-                bytes([ATOM_EXT]), struct.pack(">H", len(obj.function)), obj.function.encode('latin-1'),
-                bytes([SMALL_INTEGER_EXT,obj.arity])]
+            return [pack_bytes([EXPORT_EXT]), pack_bytes([ATOM_EXT]),
+                    struct.pack(">H", len(obj.module)), obj.module.encode('latin-1'),
+                    pack_bytes([ATOM_EXT]), struct.pack(">H", len(obj.function)),
+                    obj.function.encode('latin-1'), pack_bytes([SMALL_INTEGER_EXT,obj.arity])]
         else:
             raise NotImplementedError("Unable to serialize %r" % obj)
