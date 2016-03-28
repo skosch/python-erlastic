@@ -57,7 +57,7 @@ class ErlangTermDecoder(object):
 
     def decode_115(self, buf, offset):
         """SMALL_ATOM_EXT"""
-        atom_len = six.intexbytes(buf, offset)
+        atom_len = six.indexbytes(buf, offset)
         atom = buf[offset+1:offset+1+atom_len]
         return self.convert_atom(atom), offset+atom_len+1
 
@@ -211,9 +211,6 @@ class ErlangTermEncoder(object):
         self.unicode_type = unicode_type
 
     def encode(self, obj, compressed=False):
-        import sys
-        import pprint
-        #pprint.pprint(self.encode_part(obj),stream=sys.stderr)
         ubuf = six.b('').join(self.encode_part(obj))
         if compressed is True:
             compressed = 6
@@ -263,10 +260,12 @@ class ErlangTermEncoder(object):
         elif isinstance(obj, Atom):
             st = obj.encode('latin-1')
             return [pack_bytes([ATOM_EXT]), struct.pack(">H", len(st)), st]
-        elif isinstance(obj, six.string_types):
+        elif isinstance(obj, six.text_type):
             st = obj.encode('utf-8')
             return [pack_bytes([BINARY_EXT]), struct.pack(">L", len(st)), st]
-        elif isinstance(obj, six.binary_type):
+        elif isinstance(obj, six.string_types) or isinstance(obj, six.binary_type):
+            # https://pythonhosted.org/six/#six.string_types
+            # https://pythonhosted.org/six/#six.binary_type
             return [pack_bytes([BINARY_EXT]), struct.pack(">L", len(obj)), obj]
         elif isinstance(obj, tuple):
             n = len(obj)

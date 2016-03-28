@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+import setuptools
 
 from erlastic import __version__ as version
 
-setup(
-    name = 'erlastic',
+setuptools.setup(
+    name = 'basho-erlastic',
     version = version,
     description = 'Erlastic',
-    author = 'Samuel Stauffer',
-    author_email = 'samuel@descolada.com',
-    url = 'http://github.com/samuel/python-erlastic',
+    author = 'Samuel Stauffer, Basho Technologies',
+    author_email = 'clients@basho.com',
+    url = 'http://github.com/basho/python-erlastic',
     packages = ['erlastic'],
     install_requires=['six'],
+    test_suite='tests',
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',

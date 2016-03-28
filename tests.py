@@ -59,13 +59,13 @@ erlang_term_encode = [
 
 class ErlangTestCase(unittest.TestCase):
     def testDecode(self):
-        for python, expected_type, erlang  in erlang_term_binaries + erlang_term_decode:
+        for python, expected_type, erlang in erlang_term_binaries + erlang_term_decode:
             decoded = decode(erlang)
             self.assertEqual(python, decoded)
             self.assertTrue(isinstance(decoded, expected_type))
 
     def testEncode(self):
-        for python, expected_type, erlang  in erlang_term_binaries + erlang_term_encode:
+        for python, expected_type, erlang in erlang_term_binaries + erlang_term_encode:
             encoded = encode(python)
             self.assertEqual(erlang, encoded)
 
