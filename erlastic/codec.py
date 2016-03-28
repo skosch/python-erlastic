@@ -124,6 +124,12 @@ class ErlangTermDecoder(object):
         offset += 4
         return self.decode_bigint(n, buf, offset)
 
+    def decode_112(self, buf, offset):
+        """NEW_FUN_EXT"""
+        size = struct.unpack(">L", buf[offset:offset+4])[0]
+        arity = ord(buf[4])
+        return "f/%d"%(arity), offset+size
+
     def decode_bigint(self, n, buf, offset):
         sign = six.indexbytes(buf, offset)
         offset += 1
