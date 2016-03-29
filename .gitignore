@@ -12,6 +12,7 @@ docs/_build
 build/
 py-build/
 dist/
+basho-erlastic-*/
 
 *.egg-info/
 *.egg
