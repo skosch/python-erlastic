@@ -57,7 +57,7 @@ class ErlangTermDecoder(object):
 
     def decode_115(self, buf, offset):
         """SMALL_ATOM_EXT"""
-        atom_len = six.intexbytes(buf, offset)
+        atom_len = six.indexbytes(buf, offset)
         atom = buf[offset+1:offset+1+atom_len]
         return self.convert_atom(atom), offset+atom_len+1
 
