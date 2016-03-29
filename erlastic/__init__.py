@@ -1,7 +1,6 @@
-
 """Erlang External Term Format serializer/deserializer"""
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __license__ = "BSD"
 
 from erlastic.codec import ErlangTermDecoder, ErlangTermEncoder
@@ -15,7 +14,7 @@ import sys
 def mailbox_gen():
   while True:
     len_bin = sys.stdin.buffer.read(4)
-    if len(len_bin) != 4: return None
+    if len(len_bin) != 4: return
     (length,) = struct.unpack('!I',len_bin)
     yield decode(sys.stdin.buffer.read(length))
 def port_gen():
