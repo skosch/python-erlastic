@@ -4,10 +4,20 @@ import setuptools
 
 from erlastic import __version__ as version
 
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+    with open('README.rst', 'w') as f:
+        f.write(long_description)
+except(IOError, ImportError):
+    with open('README.md') as f:
+        long_description = f.read()
+
 setuptools.setup(
     name = 'basho-erlastic',
     version = version,
     description = 'Erlastic',
+    long_description=long_description,
     author = 'Samuel Stauffer, Basho Technologies',
     author_email = 'clients@basho.com',
     url = 'http://github.com/basho/python-erlastic',
