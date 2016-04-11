@@ -20,7 +20,7 @@ class ErlangTermDecoder(object):
             v = getattr(self, k)
             if callable(v) and k.startswith('decode_'):
                 try: self.decoders[int(k.split('_')[1])] = v
-                except: pass
+                except Exception: pass
 
     def decode(self, buf, offset=0):
         version = buf[offset]
