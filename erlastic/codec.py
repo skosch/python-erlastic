@@ -90,8 +90,11 @@ class ErlangTermDecoder(object):
     def decode_107(self, buf, offset):
         """STRING_EXT"""
         length = struct.unpack(">H", buf[offset:offset+2])[0]
-        st = buf[offset+2:offset+2+length]
-        return st, offset+2+length
+        offset += 2
+        ints = []
+        for i in range(length):
+            ints.append(six.indexbytes(buf, offset+i))
+        return ints, offset
 
     def decode_108(self, buf, offset):
         """LIST_EXT"""
