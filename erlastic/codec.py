@@ -94,7 +94,7 @@ class ErlangTermDecoder(object):
         ints = []
         for i in range(length):
             ints.append(six.indexbytes(buf, offset+i))
-        return ints, offset
+        return ints, offset+length
 
     def decode_108(self, buf, offset):
         """LIST_EXT"""
