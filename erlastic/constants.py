@@ -22,5 +22,6 @@ NEW_FUN_EXT = 112       # [UInt32:Size, UInt8:Arity, 16*Uint6-MD5:Uniq, UInt32:I
 EXPORT_EXT = 113        # [atom:Module, atom:Function, smallint:Arity]
 NEW_REFERENCE_EXT = 114 # [UInt16:Len, atom:Node, UInt8:Creation, Len*UInt32:ID]
 SMALL_ATOM_EXT = 115    # [UInt8:Len, Len:AtomName]
+MAP_EXT = 116           # [UInt32:Len, N:K,V]
 FUN_EXT = 117           # [UInt4:NumFree, pid:Pid, atom:Module, int:Index, int:Uniq, NumFree*ext:FreeVars]
 COMPRESSED = 80         # [UInt4:UncompressedSize, N:ZlibCompressedData]

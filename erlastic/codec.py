@@ -110,6 +110,17 @@ class ErlangTermDecoder(object):
             raise NotImplementedError("Lists with non empty tails are not supported")
         return items, offset
 
+    def decode_116(self, buf, offset):
+        """MAP_EXT"""
+        length = struct.unpack(">L", buf[offset:offset+4])[0]
+        offset += 4
+        items = {}
+        for i in range(length):
+            key, offset = self.decode_part(buf, offset)
+            val, offset = self.decode_part(buf, offset)
+            items[key]=val
+        return items, offset
+
     def decode_109(self, buf, offset):
         """BINARY_EXT"""
         length = struct.unpack(">L", buf[offset:offset+4])[0]
@@ -286,6 +297,12 @@ class ErlangTermEncoder(object):
             for item in obj:
                 buf += self.encode_part(item)
             buf.append(pack_bytes([NIL_EXT])) # list tail - no such thing in Python
+            return buf
+        elif isinstance(obj, dict):
+            buf = [bytes([MAP_EXT]), struct.pack(">L",len(obj))]
+            for key in obj:
+                buf += self.encode_part(key)
+                buf += self.encode_part(obj[key])
             return buf
         elif isinstance(obj, Reference):
             return [pack_bytes([NEW_REFERENCE_EXT]), struct.pack(">H", len(obj.ref_id)),
