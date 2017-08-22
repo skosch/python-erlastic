@@ -61,6 +61,18 @@ class ErlangTermDecoder(object):
         atom = buf[offset+1:offset+1+atom_len]
         return self.convert_atom(atom), offset+atom_len+1
 
+    def decode_119(self, buf, offset):
+        """SMALL_ATOM_UTF8_EXT"""
+        atom_len = buf[offset]
+        atom = buf[offset+1:offset+1+atom_len]
+        return self.convert_atom(atom), offset+atom_len+1
+
+    def decode_118(self, buf, offset):
+        """ATOM_UTF8_EXT"""
+        atom_len = struct.unpack(">H", buf[offset:offset+2])[0]
+        atom = buf[offset+2:offset+2+atom_len]
+        return self.convert_atom(atom), offset+atom_len+1
+
     def decode_104(self, buf, offset):
         """SMALL_TUPLE_EXT"""
         arity = six.indexbytes(buf, offset)
@@ -242,11 +254,11 @@ class ErlangTermEncoder(object):
 
     def encode_part(self, obj):
         if obj is False:
-            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 5), b"false"]
+            return [pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", 5), b"false"]
         elif obj is True:
-            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 4), b"true"]
+            return [pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", 4), b"true"]
         elif obj is None:
-            return [pack_bytes([ATOM_EXT]), struct.pack(">H", 4), b"none"]
+            return [pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", 4), b"none"]
         elif isinstance(obj, six.integer_types):
             if 0 <= obj <= 255:
                 return [pack_bytes([SMALL_INTEGER_EXT,obj])]
@@ -272,8 +284,9 @@ class ErlangTermEncoder(object):
             floatstr = ("%.20e" % obj).encode('ascii')
             return [pack_bytes([FLOAT_EXT]), floatstr + b"\x00"*(31-len(floatstr))]
         elif isinstance(obj, Atom):
-            st = obj.encode('latin-1')
-            return [pack_bytes([ATOM_EXT]), struct.pack(">H", len(st)), st]
+            #st = obj.encode('latin-1')
+            st = obj.encode('utf-8')
+            return [pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", len(st)), st]
         elif isinstance(obj, six.text_type):
             st = obj.encode('utf-8')
             return [pack_bytes([BINARY_EXT]), struct.pack(">L", len(st)), st]
@@ -306,21 +319,21 @@ class ErlangTermEncoder(object):
             return buf
         elif isinstance(obj, Reference):
             return [pack_bytes([NEW_REFERENCE_EXT]), struct.pack(">H", len(obj.ref_id)),
-                    pack_bytes([ATOM_EXT]), struct.pack(">H", len(obj.node)),
+                    pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", len(obj.node)),
                     obj.node.encode('latin-1'), pack_bytes([obj.creation]),
                     struct.pack(">%dL" % len(obj.ref_id), *obj.ref_id)]
         elif isinstance(obj, Port):
-            return [pack_bytes([PORT_EXT]), pack_bytes([ATOM_EXT]),
+            return [pack_bytes([PORT_EXT]), pack_bytes([ATOM_UTF8_EXT]),
                     struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
                     struct.pack(">LB", obj.port_id, obj.creation)]
         elif isinstance(obj, PID):
-           return [pack_bytes([PID_EXT]), pack_bytes([ATOM_EXT]),
+           return [pack_bytes([PID_EXT]), pack_bytes([ATOM_UTF8_EXT]),
                    struct.pack(">H", len(obj.node)), obj.node.encode('latin-1'),
                    struct.pack(">LLB", obj.pid_id, obj.serial, obj.creation)]
         elif isinstance(obj, Export):
-            return [pack_bytes([EXPORT_EXT]), pack_bytes([ATOM_EXT]),
+            return [pack_bytes([EXPORT_EXT]), pack_bytes([ATOM_UTF8_EXT]),
                     struct.pack(">H", len(obj.module)), obj.module.encode('latin-1'),
-                    pack_bytes([ATOM_EXT]), struct.pack(">H", len(obj.function)),
+                    pack_bytes([ATOM_UTF8_EXT]), struct.pack(">H", len(obj.function)),
                     obj.function.encode('latin-1'), pack_bytes([SMALL_INTEGER_EXT,obj.arity])]
         else:
             raise NotImplementedError("Unable to serialize %r" % obj)
