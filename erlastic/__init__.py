@@ -31,7 +31,7 @@ def port_gen():
         term = encode((yield))
         stdwrite(struct.pack('!I', len(term)))
         stdwrite(term)
-
+        sys.stdout.flush()
 
 def port_connection():
     port = port_gen()
