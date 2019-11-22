@@ -12,13 +12,12 @@ except(IOError, ImportError):
         long_description = f.read()
 
 setuptools.setup(
-    name = 'basho-erlastic',
-    version = '2.1.1',
+    name = 'python-erlastic',
+    version = '2.2.0',
     description = 'Erlastic',
     long_description=long_description,
-    author = 'Samuel Stauffer, Basho Technologies',
-    author_email = 'clients@basho.com',
-    url = 'http://github.com/basho/python-erlastic',
+    author = 'Multiple',
+    url = 'http://github.com/skosch/python-erlastic',
     packages = ['erlastic'],
     install_requires=['six'],
     requires=['six'],
