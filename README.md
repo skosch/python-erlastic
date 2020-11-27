@@ -38,7 +38,7 @@ mailbox, port = port_connection()
 
 for (a, b) in mailbox:
   if b != 0:
-    port.send((A("ok"),a/b))
+    port.send((A("ok"), a / b))
   else:
     port.send((A("error"), A("divisionbyzero")))
 ```
@@ -81,13 +81,14 @@ io:format("send {A,B}=~p, python result : ~p~n",[{1,1},Div(1,1)])
 ```
 or in Elixir:
 ```elixir
-port = Port.open({:spawn,'python3 division.py'},[:binary|[packet: 4]])
-div = fn(a, b)->
-  port <- {self, {:command,term_to_binary({a, b})}}
+port = Port.open({:spawn, "python3 -u division.py"}, [:binary, :exit_status, packet: 4])
+div = fn (a, b) ->
+  send port, {self(), {:command, :erlang.term_to_binary({a, b})}}
+
   receive do
-    {^port, {:data, b}} -> binary_to_term(b)
+    {^port, {_, b}} -> binary_to_term(b)
   after
-    100-> {:error, :timeout}
+    100 -> {:error, :timeout}
   end
 end
 
