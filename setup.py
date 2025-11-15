@@ -2,14 +2,8 @@
 
 import setuptools
 
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-    with open('README.rst', 'w') as f:
-        f.write(long_description)
-except(IOError, ImportError):
-    with open('README.md') as f:
-        long_description = f.read()
+with open("README.md") as f:
+    long_description = f.read()
 
 setuptools.setup(
     name = 'python-erlastic',
